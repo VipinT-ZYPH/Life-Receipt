@@ -1,0 +1,6 @@
+{
+  "name": "LIFE//RECEIPT",
+  "description": "An interactive digital archive transforming raw digital life fragments into observable patterns, derived connections, and cohesive chapters. Nothing happened in isolation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
