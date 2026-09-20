@@ -11,16 +11,18 @@ import { ThermalReceiptModal } from '@/components/receipt/ThermalReceiptModal';
 import { StoryThreadModal } from '@/components/modals/StoryThreadModal';
 import { DataIntegrityModal } from '@/components/modals/DataIntegrityModal';
 import { CsvUploadModal } from '@/components/modals/CsvUploadModal';
-import { generateBuiltInDataset } from '@/lib/data/dataset-loader';
+import { generateBuiltInDataset, loadRealDataset } from '@/lib/data/dataset-loader';
 import { computeArchiveOverview } from '@/lib/data/data-analyzer';
 import { calculateDiscoveries } from '@/lib/data/preset-discoveries';
 import { deriveLifeChapters } from '@/lib/data/preset-chapters';
 import { AnyReceipt, ExplorerFilter } from '@/lib/types';
-import { ShieldCheck, Info } from 'lucide-react';
+import { ShieldCheck, Loader2 } from 'lucide-react';
 
 export default function Home() {
-  // 1. Core State: Ingested & Seeded Life Receipts
-  const [receipts, setReceipts] = useState<AnyReceipt[]>(() => generateBuiltInDataset());
+  // 1. Core State: Ingested & Loaded Life Receipts
+  const [receipts, setReceipts] = useState<AnyReceipt[]>([]);
+  const [isLoadingDataset, setIsLoadingDataset] = useState(true);
+  const [isFullDatasetLoaded, setIsFullDatasetLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'constellation' | 'discoveries' | 'chapters' | 'explorer'>('overview');
 
   // 2. Modals State
@@ -31,6 +33,37 @@ export default function Home() {
 
   // 3. Explorer Preset Filter State (when navigated from Discoveries or Chapters)
   const [explorerFilterPreset, setExplorerFilterPreset] = useState<Partial<ExplorerFilter> | undefined>(undefined);
+
+  // Load Real Datasets from /data/ on initial mount
+  useEffect(() => {
+    let isMounted = true;
+    async function initData() {
+      try {
+        setIsLoadingDataset(true);
+        const data = await loadRealDataset(false);
+        if (isMounted) {
+          setReceipts(data);
+          setIsLoadingDataset(false);
+        }
+      } catch (err) {
+        console.error('Failed loading initial dataset:', err);
+        if (isMounted) {
+          setReceipts(generateBuiltInDataset());
+          setIsLoadingDataset(false);
+        }
+      }
+    }
+    initData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const handleLoadFullDataset = async () => {
+    setIsLoadingDataset(true);
+    const fullData = await loadRealDataset(true);
+    setReceipts(fullData);
+    setIsFullDatasetLoaded(true);
+    setIsLoadingDataset(false);
+  };
 
   // 4. Precompute high-level overview metrics, discoveries, and chapters
   const overviewStats = useMemo(() => {
@@ -73,49 +106,76 @@ export default function Home() {
       {/* Main Experience Viewport */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         
-        {activeTab === 'overview' && (
-          <OverviewView
-            stats={overviewStats}
-            onNavigate={setActiveTab}
-            onSelectReceipt={setSelectedReceipt}
-            recentSampleReceipts={receipts.slice(0, 6)}
-            onOpenIntegrity={() => setIsIntegrityModalOpen(true)}
-          />
-        )}
+        {isLoadingDataset ? (
+          <div className="h-[60vh] flex flex-col items-center justify-center space-y-4">
+            <Loader2 className="w-10 h-10 text-sky-400 animate-spin" />
+            <div className="text-center space-y-1">
+              <h2 className="text-base font-bold font-mono text-white">LOADING REAL DATASET ARCHIVES</h2>
+              <p className="text-xs text-slate-400 font-mono">Parsing Spotify History, Household Transactions & India Multi-Facet Dataset...</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {!isFullDatasetLoaded && receipts.length > 0 && (
+              <div className="mb-6 p-3 rounded-xl bg-[#101422] border border-[#21283d] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono">
+                <div className="flex items-center space-x-2 text-slate-300">
+                  <span className="h-2 w-2 rounded-full bg-sky-400 animate-pulse" />
+                  <span>Real dataset active ({receipts.length.toLocaleString()} records indexed across 2013-2024).</span>
+                </div>
+                <button
+                  onClick={handleLoadFullDataset}
+                  className="px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold transition-colors flex items-center space-x-1.5"
+                >
+                  <span>LOAD FULL 150,000+ SPOTIFY RECORD ARCHIVE</span>
+                </button>
+              </div>
+            )}
 
-        {activeTab === 'constellation' && (
-          <ConstellationView
-            receipts={receipts}
-            onSelectReceipt={setSelectedReceipt}
-            onExploreThread={setThreadAnchorReceipt}
-          />
-        )}
+            {activeTab === 'overview' && (
+              <OverviewView
+                stats={overviewStats}
+                onNavigate={setActiveTab}
+                onSelectReceipt={setSelectedReceipt}
+                recentSampleReceipts={receipts.slice(0, 6)}
+                onOpenIntegrity={() => setIsIntegrityModalOpen(true)}
+              />
+            )}
 
-        {activeTab === 'discoveries' && (
-          <DiscoveriesView
-            discoveries={discoveries}
-            onShowReceipts={handleNavigateToExplorerWithFilter}
-            onSelectReceipt={setSelectedReceipt}
-            allReceipts={receipts}
-          />
-        )}
+            {activeTab === 'constellation' && (
+              <ConstellationView
+                receipts={receipts}
+                onSelectReceipt={setSelectedReceipt}
+                onExploreThread={setThreadAnchorReceipt}
+              />
+            )}
 
-        {activeTab === 'chapters' && (
-          <ChaptersView
-            chapters={chapters}
-            onExploreChapter={handleNavigateToExplorerWithFilter}
-            onSelectReceipt={setSelectedReceipt}
-            allReceipts={receipts}
-          />
-        )}
+            {activeTab === 'discoveries' && (
+              <DiscoveriesView
+                discoveries={discoveries}
+                onShowReceipts={handleNavigateToExplorerWithFilter}
+                onSelectReceipt={setSelectedReceipt}
+                allReceipts={receipts}
+              />
+            )}
 
-        {activeTab === 'explorer' && (
-          <ExplorerView
-            receipts={receipts}
-            onSelectReceipt={setSelectedReceipt}
-            onExploreThread={setThreadAnchorReceipt}
-            initialFilter={explorerFilterPreset}
-          />
+            {activeTab === 'chapters' && (
+              <ChaptersView
+                chapters={chapters}
+                onExploreChapter={handleNavigateToExplorerWithFilter}
+                onSelectReceipt={setSelectedReceipt}
+                allReceipts={receipts}
+              />
+            )}
+
+            {activeTab === 'explorer' && (
+              <ExplorerView
+                receipts={receipts}
+                onSelectReceipt={setSelectedReceipt}
+                onExploreThread={setThreadAnchorReceipt}
+                initialFilter={explorerFilterPreset}
+              />
+            )}
+          </>
         )}
 
       </main>
