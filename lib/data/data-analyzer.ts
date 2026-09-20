@@ -258,7 +258,7 @@ export function generateConstellationData(
         (recB.hour >= 23 || recB.hour <= 4) &&
         recA.year === recB.year &&
         recA.month === recB.month &&
-        Math.random() < 0.25 // avoid dense clutter
+        ((i * 31 + j * 17) % 100) < 25 // deterministic clustering
       ) {
         links.push({
           source: nodeA.id,
@@ -312,14 +312,15 @@ export function buildStoryThread(receipt: AnyReceipt, allReceipts: AnyReceipt[])
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
-  const sequence = sorted.map((item, idx) => {
+  const sequence = sorted.map((item) => {
     const itemTime = new Date(item.timestamp).getTime();
     const diffHours = (itemTime - anchorTime) / (1000 * 60 * 60);
+    const absMins = Math.abs(Math.round(diffHours * 60));
     
     let timeDeltaFormatted = 'Anchor Record';
     if (item.id !== receipt.id) {
       if (Math.abs(diffHours) < 1) {
-        timeDeltaFormatted = `${Math.round(diffHours * 60)} mins ${diffHours >= 0 ? 'later' : 'earlier'}`;
+        timeDeltaFormatted = `${absMins} mins ${diffHours >= 0 ? 'later' : 'earlier'}`;
       } else if (Math.abs(diffHours) < 24) {
         timeDeltaFormatted = `${Math.round(Math.abs(diffHours))}h ${diffHours >= 0 ? 'later' : 'earlier'}`;
       } else {
@@ -328,19 +329,25 @@ export function buildStoryThread(receipt: AnyReceipt, allReceipts: AnyReceipt[])
       }
     }
 
-    let connectionReason = 'Primary subject of investigation';
-    let connectionType = 'Anchor';
+    let connectionReason = 'Primary anchor receipt of investigation.';
+    let connectionType = 'Anchor Record';
 
     if (item.id !== receipt.id) {
       if (item.dateStr === receipt.dateStr) {
-        connectionType = 'Same-Day Co-occurrence';
-        connectionReason = `Recorded on the exact same date (${item.dateStr}) at ${item.timeStr}.`;
+        connectionType = 'Same-Date Co-occurrence';
+        connectionReason = absMins < 60 
+          ? `Connected because these records occurred within ${absMins} minutes on ${item.dateStr} (${item.timeStr}).`
+          : `Connected because both events occurred on the exact same date (${item.dateStr}).`;
       } else if (item.source === receipt.source && item.category === receipt.category) {
-        connectionType = 'Category Continuation';
-        connectionReason = `Part of an ongoing ${item.category} engagement sequence.`;
+        connectionType = 'Pattern Continuation';
+        connectionReason = `Pattern detected: recurring ${item.category} activity during ${item.year}.`;
+      } else if (item.source === 'spotify' && receipt.source === 'spotify' &&
+                 (item as import('../types').SpotifyReceipt).artist_name === (receipt as import('../types').SpotifyReceipt).artist_name) {
+        connectionType = 'Recurring Entity';
+        connectionReason = `Pattern detected: artist ${(item as import('../types').SpotifyReceipt).artist_name} repeatedly appears in listening sessions.`;
       } else {
         connectionType = 'Temporal Proximity';
-        connectionReason = `Chronologically adjacent event occurring within the surrounding context window.`;
+        connectionReason = `Connected because these records occurred within ${timeDeltaFormatted} of the anchor event context window.`;
       }
     }
 

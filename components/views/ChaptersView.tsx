@@ -32,12 +32,18 @@ export function ChaptersView({
 
   const activeChapter = chapters.find(c => c.id === selectedChapterId) || chapters[0];
 
-  const receiptMap = new Map<string, AnyReceipt>();
-  allReceipts.forEach(r => receiptMap.set(r.id, r));
+  const receiptMap = React.useMemo(() => {
+    const map = new Map<string, AnyReceipt>();
+    allReceipts.forEach(r => map.set(r.id, r));
+    return map;
+  }, [allReceipts]);
 
-  const representativeReceipts = activeChapter?.representativeReceiptIds
-    .map(id => receiptMap.get(id))
-    .filter(Boolean) as AnyReceipt[];
+  const representativeReceipts = React.useMemo(() => {
+    if (!activeChapter) return [];
+    return activeChapter.representativeReceiptIds
+      .map(id => receiptMap.get(id))
+      .filter(Boolean) as AnyReceipt[];
+  }, [activeChapter, receiptMap]);
 
   return (
     <div className="space-y-8 pb-16 animate-fadeIn">

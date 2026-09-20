@@ -73,7 +73,7 @@ export function StoryThreadModal({
         </div>
 
         {/* Stepper progress bar */}
-        <div className="px-6 py-3 bg-[#0d0f17] border-b border-[#1f2434] flex items-center justify-between">
+        <div className="px-6 py-3 bg-[#0d0f17] border-b border-[#1f2434] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="flex items-center space-x-1.5">
             {sequence.map((step, idx) => {
               const isCurrent = idx === currentStep;
@@ -82,21 +82,28 @@ export function StoryThreadModal({
                 <button
                   key={step.receipt.id}
                   onClick={() => setCurrentStep(idx)}
-                  className={`h-2 rounded-full transition-all duration-200 ${
+                  className={`h-2 rounded-full transition-all duration-200 focus:ring-2 focus:ring-sky-400 ${
                     isCurrent
                       ? 'w-8 bg-sky-400'
                       : isAnchor
                       ? 'w-3 bg-amber-400'
                       : 'w-3 bg-[#242b3d] hover:bg-[#343e58]'
                   }`}
+                  aria-label={`Go to thread step ${idx + 1}: ${step.receipt.primaryTitle}`}
                   title={`Step ${idx + 1}: ${step.receipt.primaryTitle}`}
                 />
               );
             })}
           </div>
-          <span className="font-mono text-xs text-slate-400">
-            MOMENT {currentStep + 1} OF {sequence.length}
-          </span>
+          <div className="flex items-center space-x-2 text-[10px] font-mono text-slate-400">
+            <span className="text-sky-400 font-bold">RECEIPT</span>
+            <span>→</span>
+            <span className="text-emerald-400 font-bold">CONNECTION</span>
+            <span>→</span>
+            <span className="text-amber-400 font-bold">EVIDENCE</span>
+            <span>→</span>
+            <span className="text-purple-400 font-bold">STORY</span>
+          </div>
         </div>
 
         {/* Narrative Card Presentation */}
@@ -116,7 +123,8 @@ export function StoryThreadModal({
                   {currentItem.timeDeltaFormatted}
                 </span>
               </div>
-              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+              <p className="text-xs text-slate-200 mt-1.5 font-sans leading-relaxed">
+                <strong className="text-sky-300 font-mono">REASON: </strong>
                 {currentItem.connectionReason}
               </p>
             </div>

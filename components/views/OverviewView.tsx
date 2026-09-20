@@ -20,6 +20,7 @@ import {
   Globe
 } from 'lucide-react';
 import { ArchiveOverviewStats, AnyReceipt } from '@/lib/types';
+import { ReceiptCard } from '@/components/receipt/ReceiptCard';
 
 interface OverviewViewProps {
   stats: ArchiveOverviewStats;
@@ -413,6 +414,40 @@ export function OverviewView({
           </div>
         </div>
       </section>
+
+      {/* Recent Archive Highlights Section */}
+      {recentSampleReceipts && recentSampleReceipts.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-100 font-mono flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-sky-400" />
+                <span>RECENT ARCHIVE HIGHLIGHTS</span>
+              </h2>
+              <p className="text-xs text-slate-400">
+                Sample digital life receipts indexed from your current active dataset
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigate('explorer')}
+              className="text-xs font-mono text-sky-400 hover:text-sky-300 flex items-center space-x-1"
+            >
+              <span>View All Archive</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {recentSampleReceipts.slice(0, 6).map(receipt => (
+              <ReceiptCard
+                key={receipt.id}
+                receipt={receipt}
+                onSelect={onSelectReceipt}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
     </div>
   );

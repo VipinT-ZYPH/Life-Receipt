@@ -15,6 +15,7 @@ import { generateBuiltInDataset, loadRealDataset } from '@/lib/data/dataset-load
 import { computeArchiveOverview } from '@/lib/data/data-analyzer';
 import { calculateDiscoveries } from '@/lib/data/preset-discoveries';
 import { deriveLifeChapters } from '@/lib/data/preset-chapters';
+import { buildDatasetIndices, getRelatedReceiptsFromIndices } from '@/lib/data/data-indexer';
 import { AnyReceipt, ExplorerFilter } from '@/lib/types';
 import { ShieldCheck, Loader2 } from 'lucide-react';
 
@@ -33,6 +34,17 @@ export default function Home() {
 
   // 3. Explorer Preset Filter State (when navigated from Discoveries or Chapters)
   const [explorerFilterPreset, setExplorerFilterPreset] = useState<Partial<ExplorerFilter> | undefined>(undefined);
+
+  // Precomputed dataset indices (O(1) Map lookups)
+  const datasetIndices = useMemo(() => {
+    return buildDatasetIndices(receipts);
+  }, [receipts]);
+
+  // Memoized related receipts for modal
+  const modalRelatedReceipts = useMemo(() => {
+    if (!selectedReceipt) return [];
+    return getRelatedReceiptsFromIndices(selectedReceipt, datasetIndices, 3);
+  }, [selectedReceipt, datasetIndices]);
 
   // Load Real Datasets from /data/ on initial mount
   useEffect(() => {
@@ -208,18 +220,7 @@ export default function Home() {
       <ThermalReceiptModal
         receipt={selectedReceipt}
         onClose={() => setSelectedReceipt(null)}
-        relatedReceipts={
-          selectedReceipt
-            ? receipts
-                .filter(
-                  r =>
-                    r.id !== selectedReceipt.id &&
-                    (r.category === selectedReceipt.category ||
-                      r.dateStr === selectedReceipt.dateStr)
-                )
-                .slice(0, 3)
-            : []
-        }
+        relatedReceipts={modalRelatedReceipts}
         onSelectRelated={(rec) => setSelectedReceipt(rec)}
         onExploreThread={(rec) => {
           setSelectedReceipt(null);

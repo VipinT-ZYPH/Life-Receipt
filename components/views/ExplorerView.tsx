@@ -40,6 +40,8 @@ export function ExplorerView({
   initialFilter
 }: ExplorerViewProps) {
   const [searchQuery, setSearchQuery] = useState(initialFilter?.searchQuery || '');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+
   const [selectedSources, setSelectedSources] = useState<ReceiptSource[]>(initialFilter?.sources || ['spotify', 'household', 'india_trans']);
   const [dateStart, setDateStart] = useState(initialFilter?.dateRange?.start || '');
   const [dateEnd, setDateEnd] = useState(initialFilter?.dateRange?.end || '');
@@ -51,16 +53,45 @@ export function ExplorerView({
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 24;
 
-  // Compile active filter object
+  // Debounce search query changes by 150ms
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 150);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  const [prevInitialFilter, setPrevInitialFilter] = useState(initialFilter);
+
+  if (initialFilter !== prevInitialFilter) {
+    setPrevInitialFilter(initialFilter);
+    if (initialFilter) {
+      if (initialFilter.searchQuery !== undefined) {
+        setSearchQuery(initialFilter.searchQuery);
+        setDebouncedSearchQuery(initialFilter.searchQuery);
+      }
+      if (initialFilter.sources) setSelectedSources(initialFilter.sources);
+      if (initialFilter.dateRange) {
+        setDateStart(initialFilter.dateRange.start || '');
+        setDateEnd(initialFilter.dateRange.end || '');
+      }
+      if (initialFilter.timeOfDay) setSelectedTimeOfDay(initialFilter.timeOfDay);
+      if (initialFilter.onlySpecial) setSpecialFilters(initialFilter.onlySpecial);
+      if (initialFilter.sortBy) setSortBy(initialFilter.sortBy);
+      setCurrentPage(1);
+    }
+  }
+
+  // Compile active filter object using debounced search
   const activeFilter: ExplorerFilter = useMemo(() => ({
-    searchQuery,
+    searchQuery: debouncedSearchQuery,
     sources: selectedSources,
     dateRange: { start: dateStart, end: dateEnd },
     categories: [],
     timeOfDay: selectedTimeOfDay,
     onlySpecial: specialFilters,
     sortBy
-  }), [searchQuery, selectedSources, dateStart, dateEnd, selectedTimeOfDay, specialFilters, sortBy]);
+  }), [debouncedSearchQuery, selectedSources, dateStart, dateEnd, selectedTimeOfDay, specialFilters, sortBy]);
 
   // Execute filtering & pagination
   const { items, totalCount, totalPages } = useMemo(() => {
@@ -88,6 +119,7 @@ export function ExplorerView({
 
   const resetFilters = () => {
     setSearchQuery('');
+    setDebouncedSearchQuery('');
     setSelectedSources(['spotify', 'household', 'india_trans']);
     setDateStart('');
     setDateEnd('');

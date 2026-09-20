@@ -328,58 +328,56 @@ Important information and functionality are not dependent solely on hover intera
 
 # Technology Stack
 
-* **React**
+* **Next.js 15 (App Router)**
+* **React 19**
 * **TypeScript**
-* **Vite**
-* **Tailwind CSS**
-* **Lucide Icons**
-* **Frontend data processing**
-* **Client-side state management**
-* **Browser APIs where appropriate**
+* **Tailwind CSS v4**
+* **Lucide React Icons**
+* **PapaParse** (Client-side CSV ingestion)
+* **Frontend-Only Data Pipeline** (Client-side indexing & memory state)
 
-No backend is required.
-
-No server-side application is used.
+No backend server or API keys required.
 
 
 # Architecture
 
-The project is structured around reusable frontend components and data-processing utilities.
-
-Conceptually:
+The codebase strictly enforces separation of concerns across a 5-layer pipeline:
 
 ```text
-src/
-├── components/
-│   ├── overview/
-│   ├── constellation/
-│   ├── discoveries/
-│   ├── chapters/
-│   └── receipts/
-│
-├── data/
-│   ├── loaders/
-│   ├── processors/
-│   └── derived/
-│
-├── hooks/
-│
-├── utils/
-│
-├── types/
-│
-├── pages/
-│
-└── App.tsx
+RAW DATA  ──►  NORMALIZATION / INDEXING  ──►  ANALYTICS  ──►  CONNECTIONS  ──►  PRESENTATION / UI
 ```
 
-The exact structure may vary depending on the final implementation.
+Project Directory Layout:
+
+```text
+Life-Receipt/
+├── app/
+│   ├── layout.tsx         # Root HTML/Font Layout
+│   ├── page.tsx           # Primary App Container & State Manager
+│   └── globals.css        # Core Design Tokens & Glassmorphism Utility
+│
+├── components/
+│   ├── layout/            # Navigation Header & Status Footers
+│   ├── views/             # Core Experiences (Overview, Constellation, Discoveries, Chapters, Explorer)
+│   ├── receipt/           # Thermal Receipt Cards & Detail Slips
+│   └── modals/            # Story Thread, Data Integrity, & CSV Upload Modals
+│
+├── lib/
+│   ├── data/
+│   │   ├── dataset-loader.ts    # Dataset Fetching & In-Browser CSV Parsing
+│   │   ├── data-indexer.ts     # Precomputed O(1) Map/Set Lookup Indices
+│   │   ├── data-analyzer.ts    # Overview Stats, Constellation Links & Story Threads
+│   │   ├── preset-discoveries.ts# Empirical Insight Detections
+│   │   └── preset-chapters.ts   # Behavioral Life Chapter Eras
+│   ├── types.ts           # Strictly-typed Data Models & Filters
+│   └── utils.ts           # Classnames & Helper Utilities
+```
 
 The architecture separates:
 
-**Data → Processing → State → UI → Visualization**
+**Raw Data → Indexing → State → Feature Components → Presentation**
 
-to keep the application maintainable and extensible.
+keeping calculations out of render passes and ensuring maximum performance.
 
 
 

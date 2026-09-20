@@ -34,12 +34,18 @@ export function DiscoveriesView({
 
   const activeDiscovery = discoveries.find(d => d.id === selectedDiscoveryId) || discoveries[0];
 
-  const receiptMap = new Map<string, AnyReceipt>();
-  allReceipts.forEach(r => receiptMap.set(r.id, r));
+  const receiptMap = React.useMemo(() => {
+    const map = new Map<string, AnyReceipt>();
+    allReceipts.forEach(r => map.set(r.id, r));
+    return map;
+  }, [allReceipts]);
 
-  const sampleReceipts = activeDiscovery?.sampleReceiptIds
-    .map(id => receiptMap.get(id))
-    .filter(Boolean) as AnyReceipt[];
+  const sampleReceipts = React.useMemo(() => {
+    if (!activeDiscovery) return [];
+    return activeDiscovery.sampleReceiptIds
+      .map(id => receiptMap.get(id))
+      .filter(Boolean) as AnyReceipt[];
+  }, [activeDiscovery, receiptMap]);
 
   return (
     <div className="space-y-8 pb-16 animate-fadeIn">

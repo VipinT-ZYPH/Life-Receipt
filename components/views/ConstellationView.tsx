@@ -353,7 +353,10 @@ export function ConstellationView({
                 onMouseDown={handleCanvasMouseDown}
                 onMouseMove={handleCanvasMouseMove}
                 onMouseUp={handleCanvasMouseUp}
-                className="w-full h-full block"
+                role="img"
+                aria-label="Interactive 2D graph of connected life receipt nodes. Use List View button for accessible text representation."
+                tabIndex={0}
+                className="w-full h-full block focus:outline-none focus:ring-1 focus:ring-sky-400 rounded-2xl"
               />
 
               {/* Floating Canvas Controls Overlay */}
